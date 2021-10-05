@@ -1,0 +1,983 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "\n",
+    "from sklearn.model_selection import GridSearchCV\n",
+    "from sklearn.model_selection import cross_val_score\n",
+    "from sklearn.model_selection import KFold\n",
+    "from sklearn import preprocessing\n",
+    "\n",
+    "from sklearn.ensemble import RandomForestRegressor\n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.svm import NuSVR\n",
+    "from sklearn.svm import SVR\n",
+    "from lightgbm import LGBMRegressor\n",
+    "\n",
+    "\n",
+    "from sklearn.decomposition import KernelPCA\n",
+    "from sklearn.metrics import mean_squared_error\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "from sklearn.preprocessing import MinMaxScaler"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "np.random.seed(0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>fr1_t1</th>\n",
+       "      <th>fr1_t2</th>\n",
+       "      <th>fr1_t3</th>\n",
+       "      <th>fr1_t4</th>\n",
+       "      <th>fr1_t5</th>\n",
+       "      <th>fr1_t6</th>\n",
+       "      <th>fr1_t7</th>\n",
+       "      <th>fr1_t8</th>\n",
+       "      <th>fr1_t9</th>\n",
+       "      <th>fr1_t10</th>\n",
+       "      <th>...</th>\n",
+       "      <th>sfm</th>\n",
+       "      <th>sh</th>\n",
+       "      <th>prec.x</th>\n",
+       "      <th>roughness</th>\n",
+       "      <th>rugo</th>\n",
+       "      <th>sfm.1</th>\n",
+       "      <th>shannon</th>\n",
+       "      <th>simpson</th>\n",
+       "      <th>renyi</th>\n",
+       "      <th>genre</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>-58.869213</td>\n",
+       "      <td>-57.427879</td>\n",
+       "      <td>-52.358333</td>\n",
+       "      <td>-50.295002</td>\n",
+       "      <td>-52.479034</td>\n",
+       "      <td>-61.986246</td>\n",
+       "      <td>-55.663109</td>\n",
+       "      <td>-56.226721</td>\n",
+       "      <td>-65.459826</td>\n",
+       "      <td>-77.833895</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.014347</td>\n",
+       "      <td>0.511162</td>\n",
+       "      <td>0.125</td>\n",
+       "      <td>8.446222</td>\n",
+       "      <td>0.185522</td>\n",
+       "      <td>0.249646</td>\n",
+       "      <td>0.788776</td>\n",
+       "      <td>0.985592</td>\n",
+       "      <td>0.679664</td>\n",
+       "      <td>8</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>-84.713043</td>\n",
+       "      <td>-33.884963</td>\n",
+       "      <td>-49.252116</td>\n",
+       "      <td>-43.184137</td>\n",
+       "      <td>-58.902151</td>\n",
+       "      <td>-36.261988</td>\n",
+       "      <td>-32.767327</td>\n",
+       "      <td>-59.778001</td>\n",
+       "      <td>-53.738831</td>\n",
+       "      <td>-53.586384</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.180455</td>\n",
+       "      <td>0.585188</td>\n",
+       "      <td>0.125</td>\n",
+       "      <td>1.513671</td>\n",
+       "      <td>0.174264</td>\n",
+       "      <td>0.401591</td>\n",
+       "      <td>0.788453</td>\n",
+       "      <td>0.967664</td>\n",
+       "      <td>0.550077</td>\n",
+       "      <td>12</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>-37.373110</td>\n",
+       "      <td>-24.066620</td>\n",
+       "      <td>-46.382905</td>\n",
+       "      <td>-22.283698</td>\n",
+       "      <td>-27.149178</td>\n",
+       "      <td>-33.746633</td>\n",
+       "      <td>-44.854143</td>\n",
+       "      <td>-30.496033</td>\n",
+       "      <td>-26.460457</td>\n",
+       "      <td>-40.495800</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.035761</td>\n",
+       "      <td>0.716334</td>\n",
+       "      <td>0.125</td>\n",
+       "      <td>3.621557</td>\n",
+       "      <td>0.175301</td>\n",
+       "      <td>0.742656</td>\n",
+       "      <td>0.938480</td>\n",
+       "      <td>0.994359</td>\n",
+       "      <td>0.829988</td>\n",
+       "      <td>18</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>-24.763987</td>\n",
+       "      <td>-27.464894</td>\n",
+       "      <td>-28.981976</td>\n",
+       "      <td>-33.960651</td>\n",
+       "      <td>-27.550084</td>\n",
+       "      <td>-40.722389</td>\n",
+       "      <td>-43.739782</td>\n",
+       "      <td>-27.722211</td>\n",
+       "      <td>-43.123875</td>\n",
+       "      <td>-36.285953</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.145529</td>\n",
+       "      <td>0.719776</td>\n",
+       "      <td>0.125</td>\n",
+       "      <td>2.194240</td>\n",
+       "      <td>0.175874</td>\n",
+       "      <td>0.676176</td>\n",
+       "      <td>0.913847</td>\n",
+       "      <td>0.991913</td>\n",
+       "      <td>0.772249</td>\n",
+       "      <td>5</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>-35.299522</td>\n",
+       "      <td>-52.721687</td>\n",
+       "      <td>-51.048645</td>\n",
+       "      <td>-40.342792</td>\n",
+       "      <td>-42.316873</td>\n",
+       "      <td>-44.071266</td>\n",
+       "      <td>-38.383575</td>\n",
+       "      <td>-40.619391</td>\n",
+       "      <td>-32.923650</td>\n",
+       "      <td>-34.404407</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.064121</td>\n",
+       "      <td>0.734136</td>\n",
+       "      <td>0.125</td>\n",
+       "      <td>0.880376</td>\n",
+       "      <td>0.173339</td>\n",
+       "      <td>0.426335</td>\n",
+       "      <td>0.796038</td>\n",
+       "      <td>0.975167</td>\n",
+       "      <td>0.592401</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 94592 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "      fr1_t1     fr1_t2     fr1_t3     fr1_t4     fr1_t5     fr1_t6  \\\n",
+       "0 -58.869213 -57.427879 -52.358333 -50.295002 -52.479034 -61.986246   \n",
+       "1 -84.713043 -33.884963 -49.252116 -43.184137 -58.902151 -36.261988   \n",
+       "2 -37.373110 -24.066620 -46.382905 -22.283698 -27.149178 -33.746633   \n",
+       "3 -24.763987 -27.464894 -28.981976 -33.960651 -27.550084 -40.722389   \n",
+       "4 -35.299522 -52.721687 -51.048645 -40.342792 -42.316873 -44.071266   \n",
+       "\n",
+       "      fr1_t7     fr1_t8     fr1_t9    fr1_t10  ...       sfm        sh  \\\n",
+       "0 -55.663109 -56.226721 -65.459826 -77.833895  ...  0.014347  0.511162   \n",
+       "1 -32.767327 -59.778001 -53.738831 -53.586384  ...  0.180455  0.585188   \n",
+       "2 -44.854143 -30.496033 -26.460457 -40.495800  ...  0.035761  0.716334   \n",
+       "3 -43.739782 -27.722211 -43.123875 -36.285953  ...  0.145529  0.719776   \n",
+       "4 -38.383575 -40.619391 -32.923650 -34.404407  ...  0.064121  0.734136   \n",
+       "\n",
+       "   prec.x  roughness      rugo     sfm.1   shannon   simpson     renyi  genre  \n",
+       "0   0.125   8.446222  0.185522  0.249646  0.788776  0.985592  0.679664      8  \n",
+       "1   0.125   1.513671  0.174264  0.401591  0.788453  0.967664  0.550077     12  \n",
+       "2   0.125   3.621557  0.175301  0.742656  0.938480  0.994359  0.829988     18  \n",
+       "3   0.125   2.194240  0.175874  0.676176  0.913847  0.991913  0.772249      5  \n",
+       "4   0.125   0.880376  0.173339  0.426335  0.796038  0.975167  0.592401      2  \n",
+       "\n",
+       "[5 rows x 94592 columns]"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train = pd.read_csv('hackaton/train.csv')\n",
+    "test = pd.read_csv('hackaton/test.csv')\n",
+    "target = train['tempo']\n",
+    "del train['id']\n",
+    "del train['tempo']\n",
+    "test_id = test['id']\n",
+    "del test['id']\n",
+    "train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train['genre'] = train['genre'].astype('object')\n",
+    "test['genre'] = test['genre'].astype('object')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check correlation:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 70,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ranges = [range(87552), range(87552, 94392), range(94392, 94563), range(94563, 94571), range(94571, 94585), \n",
+    "       range(94585, 94591), range(94591,94592)]\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 90,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from scipy.stats import pearsonr\n",
+    "from statistics import mean\n",
+    "def target_corr(t, rng, df, target):\n",
+    "    names = []\n",
+    "    new_df = df.iloc[:, rng]\n",
+    "    for i in range(new_df.shape[1]):\n",
+    "        corr = pearsonr(new_df.iloc[:, i], target)\n",
+    "        if abs(corr[0]) >= t:\n",
+    "            names.append((new_df.columns[i], corr[0]))\n",
+    "    print (names)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 99,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0.1409618971639442\n",
+      "0.0380642110120817\n",
+      "0.019114748128887096\n",
+      "0.07989587293186097\n",
+      "0.0773704709812186\n",
+      "0.09983145644657672\n",
+      "0.13057767091814082\n"
+     ]
+    }
+   ],
+   "source": [
+    "ranges = [range(87552), range(87552, 94392), range(94392, 94563), range(94563, 94571), range(94571, 94585), \n",
+    "       range(94585, 94591), range(94591,94592)]\n",
+    "for el in ranges:\n",
+    "    target_corr(el, train, target)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 101,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def binding1(d,x):\n",
+    "    start = 0\n",
+    "    end = x\n",
+    "    diz = {}\n",
+    "    dim = d.shape[1]\n",
+    "    while start < dim:\n",
+    "        if end >= dim:\n",
+    "            temp = d[d.columns[start:dim]]\n",
+    "            mean = temp.mean(axis = 1)\n",
+    "            median = temp.median(axis=1)\n",
+    "            minimo = temp.min(axis = 1)\n",
+    "            massimo = temp.max(axis = 1)\n",
+    "            diff = massimo-minimo\n",
+    "            diz[str(start)+'_'+str(dim)+'_mean'] = list(mean)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_median'] = list(median)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_diff'] = list(diff)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_minimo'] = list(minimo)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_massimo'] = list(massimo)\n",
+    "            break\n",
+    "        else:     \n",
+    "            temp = d[d.columns[start:end]]\n",
+    "            mean = temp.mean(axis = 1)\n",
+    "            median = temp.median(axis=1)\n",
+    "            minimo = temp.min(axis = 1)\n",
+    "            massimo = temp.max(axis = 1)\n",
+    "            diff = massimo-minimo\n",
+    "            diz[str(start)+'_'+str(dim)+'_mean'] = list(mean)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_median'] = list(median)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_diff'] = list(diff)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_minimo'] = list(minimo)\n",
+    "            #diz[str(start)+'_'+str(dim)+'_massimo'] = list(massimo)\n",
+    "            start += x\n",
+    "            end += x\n",
+    "    final = pd.DataFrame(diz)\n",
+    "    return final"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 102,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "test_mel = test.iloc[:,87552:94392]\n",
+    "train_mel = train.iloc[:,87552:94392]\n",
+    "train_mel = preprocessing.scale(binding1(train_mel, 171))\n",
+    "test_mel = preprocessing.scale(binding1(test_mel, 171))\n",
+    "train_mel = pd.DataFrame(train_mel)\n",
+    "test_mel = pd.DataFrame(test_mel)\n",
+    "train_mel = pd.concat([train_mel,pd.get_dummies(train['genre'], prefix = 'genere')], axis=1)\n",
+    "test_mel = pd.concat([test_mel,pd.get_dummies(test['genre'],  prefix = 'genere')], axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 103,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_f = train.iloc[:,94572:94585]\n",
+    "cols = train_f.columns\n",
+    "#train_f.drop(columns = ['genre'], inplace = True)\n",
+    "train_f = preprocessing.scale(train_f)\n",
+    "train_f = pd.DataFrame(train_f, columns = cols)\n",
+    "#train_f = pd.concat([train_f, pd.get_dummies(train['genre'], prefix = 'genere')], axis = 1)\n",
+    "train_f = train_f.fillna(0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 104,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.ensemble import RandomForestRegressor\n",
+    "from sklearn.model_selection import cross_val_score"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 151,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from statistics import mean\n",
+    "\n",
+    "def importance(df, target, rng, avg_imp, plot = False):\n",
+    "    \n",
+    "    new_df = df.iloc[:, rng]\n",
+    "\n",
+    "    reg = forest.fit(new_df, target)\n",
+    "    val = sorted(zip(new_df.columns, map(lambda x: round(abs(x), 4), reg.feature_importances_)), key = lambda x: x[0],\n",
+    "             reverse=True)\n",
+    "    local_avg = mean(reg.feature_importances_)\n",
+    "    features = []\n",
+    "    for col, imp in val:\n",
+    "        if imp >= avg_imp:\n",
+    "            features.append((col, imp)) \n",
+    "\n",
+    "    if not plot:\n",
+    "        \n",
+    "        return features\n",
+    "    \n",
+    "    else:\n",
+    "        \n",
+    "        \n",
+    "        importance_df = pd.DataFrame(features, columns = [\"features\", \"importance\"])\n",
+    "        importance_df = importance_df.sort_values(by=['importance'], ascending = False)\n",
+    "\n",
+    "        importance_avg = importance_df[\"importance\"].mean()\n",
+    "\n",
+    "        # Plot:\n",
+    "\n",
+    "        plt.figure(figsize = (10,10))\n",
+    "        sns.barplot(x = \"importance\", y = \"features\", data = importance_df)\n",
+    "        #plt.plot([importance_avg, importance_avg], [importance_df[\"importance\"].min(), new_df.shape[1]], \"--r\")\n",
+    "        plt.title(\"Important Features\", pad = 15, fontsize = 14)\n",
+    "        plt.xticks(fontsize = 10)\n",
+    "        plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 131,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "forest = RandomForestRegressor(n_estimators = 10, criterion = 'mse', n_jobs = -1)\n",
+    "ranges = [range(87552), range(87552, 94392), range(94392, 94563), range(94563, 94571), range(94571, 94585), \n",
+    "       range(94585, 94592)]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 150,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "reg = forest.fit(train, target)\n",
+    "avg_imp = mean(reg.feature_importances_)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 155,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "imp = importance(train, target, range(94571, 94585), avg_imp)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 174,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "2D-spectrogram 0.0008 0.0\n",
+      "Mel-frequency 0.0007 0.0\n",
+      "dominant frequency 0.0058 0.0\n",
+      "STFT summary 0.125 0.0\n",
+      "frequency spectrum statistics 0.0769 0.0\n",
+      "other statistics 0.1429 0.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "names = ['2D-spectrogram', 'Mel-frequency', 'dominant frequency', 'STFT summary', 'frequency spectrum statistics',\n",
+    "        'other statistics']\n",
+    "ranges = [range(87552), range(87552, 94392), range(94392, 94563), range(94563, 94571), range(94571, 94585), \n",
+    "       range(94585, 94592)]\n",
+    "for i in range(len(names)):\n",
+    "    name = names[i]\n",
+    "    rng = ranges[i]\n",
+    "    imp = importance(train, target, rng, avg_imp)\n",
+    "    local_avg = round(mean([el[1] for el in imp]),4)\n",
+    "    tot_avg = round(avg_imp, 4)\n",
+    "    print(name, local_avg, tot_avg)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 171,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "7"
+      ]
+     },
+     "execution_count": 171,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "len(ranges)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "[el[0] for el in ]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 105,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "forest = RandomForestRegressor(n_estimators = 1000, criterion = 'mse')\n",
+    "reg = forest.fit(train_f, target)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from statistics import mean\n",
+    "val = sorted(zip(map(lambda x: round(abs(x), 4), reg.feature_importances_),train_f.columns), key = lambda x: x[0],\n",
+    "             reverse=True)\n",
+    "    \n",
+    "features = []\n",
+    "avg = mean(reg.feature_importances_)\n",
+    "for el, col in val:\n",
+    "    if el >= avg:\n",
+    "        features.append(col)        "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "final = pd.concat([train_mel, train_f[['sh']]], axis = 1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "score = []\n",
+    "cs = np.arange(900,1300,50)\n",
+    "#cs = [100,1000,2000]\n",
+    "for i in cs:\n",
+    "    reg = SVR(kernel='rbf', C=i)\n",
+    "    scores = cross_val_score(reg, final_f, target, scoring='neg_root_mean_squared_error')\n",
+    "    #score.append(scores.mean())\n",
+    "    print(i, -scores.mean())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Add new variable to train_mle and test_mle:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_mel['sh'] = preprocessing.scale(train['sh'])\n",
+    "test_mel['sh'] = preprocessing.scale(test['sh'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Peaks:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from scipy.signal import find_peaks\n",
+    "\n",
+    "mels = train_mel.iloc[:, range(40)]\n",
+    "\n",
+    "df_peaks = []\n",
+    "for _, row in mels.iterrows():\n",
+    "    idx = find_peaks(row)[0]\n",
+    "    peak = sorted(row[idx], reverse = True)\n",
+    "    df_peaks.append(peak)\n",
+    "df_peaks = pd.DataFrame(df_peaks)\n",
+    "\n",
+    "score = []\n",
+    "cs = np.arange(1175,1255,5)\n",
+    "#cs = [100,1000,2000]\n",
+    "for i in cs:\n",
+    "    reg = SVR(kernel='rbf', C=i,epsilon=0.00001)\n",
+    "    scores = cross_val_score(reg, pd.concat([df_peaks.loc[:,0:2].apply(lambda x: 1/(1+x)), train_mel], axis = 1), target, scoring='neg_root_mean_squared_error')\n",
+    "    #score.append(scores.mean())\n",
+    "    print(i, -scores.mean())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Michele Improvments:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "freq_list = pd.read_csv('hackaton/freq_vector.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Generate dic with freq:\n",
+    "\n",
+    "freq_dict = {}\n",
+    "\n",
+    "for i in range(len(freq_list)):\n",
+    "    freq_dict['fr'+str(i+1)] = float(freq_list.iloc[i,1])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Get the best k frequencies:\n",
+    "\n",
+    "def topK(data, freq_dict, K):\n",
+    "    \n",
+    "    freq_means_in_time = pd.DataFrame()\n",
+    "\n",
+    "    for i in range(512):\n",
+    "        freq_means_in_time['fr'+str(i+1)] = data.iloc[:,i*171:(i+1)*171].mean(axis=1)\n",
+    "        \n",
+    "    dominant_freq = []\n",
+    "\n",
+    "    for i in range(len(freq_means_in_time)):\n",
+    "        dominant_freq.append(list(freq_means_in_time.iloc[i, :].nlargest(K).index))\n",
+    "        \n",
+    "    top_10_freq = []\n",
+    "    row = 0\n",
+    "    f = 1\n",
+    "\n",
+    "    \n",
+    "    for audio in dominant_freq:\n",
+    "        f = 1\n",
+    "        tmp_dict = {}\n",
+    "        for freq in audio:\n",
+    "            tmp_dict['domfreq'+str(f)] = freq_dict[freq]\n",
+    "            for t in range(1, 172):\n",
+    "                tmp_dict['domfreq'+str(f)+'_t'+str(t)] = data[freq+'_t'+str(t)][row]\n",
+    "\n",
+    "            f += 1\n",
+    "\n",
+    "        top_10_freq.append(tmp_dict)\n",
+    "        row += 1\n",
+    "        \n",
+    "    data_top10 = pd.DataFrame(top_10_freq)\n",
+    "    \n",
+    "    return data_top10"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create df with the dominant freq for every\n",
+    "K = 1\n",
+    "train_topK = topK(train, freq_dict, K)\n",
+    "test_topK = topK(test, freq_dict, K)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# New column in db dominant freq value:\n",
+    "dominants = ['domfreq'+str(i+1) for i in range(K)]\n",
+    "train_dominants = train_topK[dominants]\n",
+    "test_dominants = test_topK[dominants]\n",
+    "\n",
+    "train_dominants = train_dominants.apply(lambda x: 1/(1+x))\n",
+    "test_dominants = test_dominants.apply(lambda x: 1/(1+x))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_topK.drop(dominants, axis=1, inplace=True)\n",
+    "test_topK.drop(dominants, axis=1, inplace=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_topK_bin = binding1(train_topK, 171)\n",
+    "test_topK_bin = binding1(test_topK, 171)\n",
+    "\n",
+    "train_topK_scaled = preprocessing.scale(train_topK_bin)\n",
+    "test_topK_scaled = preprocessing.scale(test_topK_bin)\n",
+    "\n",
+    "train_top = pd.DataFrame(train_topK_scaled)\n",
+    "test_top = pd.DataFrame(test_topK_scaled)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "train_mel = pd.concat([train_mel, train_top, train_dominants], axis = 1)\n",
+    "test_mel = pd.concat([test_mel, test_top, test_dominants], axis = 1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Grid search:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "param_grid = param_grid = {'gamma': np.linspace(0.022, 0.023, 50)}\n",
+    "reg = SVR(kernel = 'rbf', epsilon = 0.00001, C = 1240)\n",
+    "grid = GridSearchCV(reg, param_grid, refit = True, scoring='neg_root_mean_squared_error', verbose = 3, n_jobs = -1,\n",
+    "                   cv = 10)\n",
+    "grid.fit(train_mel, target)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "grid.best_estimator_"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "scores = cross_val_score(grid.best_estimator_, train_mel, target, scoring='neg_root_mean_squared_error')\n",
+    "mean(scores)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "reg = SVR(kernel = 'rbf', C = 1240, epsilon = 0.0001)\n",
+    "scores = cross_val_score(reg, train_mel, target, scoring='neg_root_mean_squared_error')\n",
+    "mean(scores)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# KPCA"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import matplotlib.pyplot as plt\n",
+    "from sklearn.decomposition import KernelPCA\n",
+    "from kneed import KneeLocator\n",
+    "\n",
+    "kpca = KernelPCA(kernel = 'rbf')\n",
+    "kpca_transform = kpca.fit_transform(train_mel)\n",
+    "explained_variance = np.var(kpca_transform, axis=0)\n",
+    "explained_variance_ratio = explained_variance / np.sum(explained_variance)\n",
+    "y = np.cumsum(explained_variance_ratio)\n",
+    "x = range(1, len(y)+1)\n",
+    "kn = KneeLocator(x, y, curve='concave', direction='increasing')\n",
+    "knee = kn.knee\n",
+    "plt.figure()\n",
+    "plt.plot(y)\n",
+    "plt.plot([knee,knee], [0.15, 1])\n",
+    "plt.xlabel('Number of Components')\n",
+    "plt.ylabel('Variance (%)') #for each component\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "transformer = KernelPCA(n_components=knee, kernel='cosine')\n",
+    "X_transformed = transformer.fit_transform(train_mel)\n",
+    "test_transformed = transformer.transform(test_mel)\n",
+    "X_transformed.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "score = []\n",
+    "cs = np.arange(400,2000,200)\n",
+    "#cs = [100,1000,2000]\n",
+    "for i in cs:\n",
+    "    reg = SVR(kernel='rbf', C=i, epsilon = 0.00001)\n",
+    "    scores = cross_val_score(reg, X_transformed, target, scoring='neg_root_mean_squared_error')\n",
+    "    #score.append(scores.mean())\n",
+    "    print(i, -scores.mean())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Submission:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "submission = pd.DataFrame({\"id\":test_id, \"target\":grid.best_estimator_.predict(test_mel)})\n",
+    "submission.to_csv('submission_mel.csv', index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "(submission.round(decimals=0)).to_csv('submission_mel.csv', index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "submission = pd.read_csv('submission_mel.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "submission.head()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
